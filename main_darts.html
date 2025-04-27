@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Segnapunti Freccette</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    .hidden {
+      display: none;
+    }
+    input, button, select {
+      margin: 5px 0;
+      padding: 10px;
+      font-size: 16px;
+      width: 100%;
+    }
+    .player {
+      margin: 10px 0;
+      padding: 10px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .turn {
+      background: #d1ffd1;
+    }
+    .dart-buttons button, .multiplier-buttons button {
+      width: 60px;
+      margin: 5px;
+    }
+    .selected-multiplier {
+      background-color: #4CAF50;
+      color: white;
+    }
+    #throws {
+      margin: 10px 0;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="setup">
+    <h2>Imposta la Partita</h2>
+    <label>Numero di Giocatori:</label>
+    <input type="number" id="numPlayers" min="2" max="10" value="2">
+
+    <div id="playerNames"></div>
+
+    <label>Punteggio Iniziale:</label>
+    <select id="startScore">
+      <option value="301">301</option>
+      <option value="501">501</option>
+      <option value="701">701</option>
+    </select>
+
+    <button onclick="startGame()">Inizia Partita</button>
+  </div>
+
+  <div id="game" class="hidden">
+    <h2>Partita in Corso</h2>
+    <div id="players"></div>
+
+    <h3 id="turnInfo"></h3>
+    <div id="throws">Tiri: </div>
+    <div class="multiplier-buttons">
+      <button id="btn-x2" onclick="setMultiplier(2)">x2</button>
+      <button id="btn-x3" onclick="setMultiplier(3)">x3</button>
+    </div>
+    <div class="dart-buttons" id="dartButtons"></div>
+  </div>
+
+  <script>
+    let players = [];
+    let currentPlayer = 0;
+    let throws = [];
+    let currentMultiplier = 1;
+
+    function startGame() {
+      const num = parseInt(document.getElementById('numPlayers').value);
+      const startScore = parseInt(document.getElementById('startScore').value);
+      players = [];
+      for (let i = 0; i < num; i++) {
+        const name = document.getElementById('playerName' + i).value || `Giocatore ${i+1}`;
+        players.push({ name: name, score: startScore });
+      }
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('game').classList.remove('hidden');
+      renderPlayers();
+      updateTurnInfo();
+      generateDartButtons();
+    }
+
+    function renderPlayers() {
+      const container = document.getElementById('players');
+      container.innerHTML = '';
+      players.forEach((player, index) => {
+        const div = document.createElement('div');
+        div.className = 'player' + (index === currentPlayer ? ' turn' : '');
+        div.innerHTML = `<strong>${player.name}</strong>: ${player.score}`;
+        container.appendChild(div);
+      });
+    }
+
+    function updateTurnInfo() {
+      document.getElementById('turnInfo').innerText = `Turno di ${players[currentPlayer].name}`;
+      throws = [];
+      currentMultiplier = 1;
+      clearMultiplierSelection();
+      updateThrowsDisplay();
+    }
+
+    function updateThrowsDisplay() {
+      document.getElementById('throws').innerText = `Tiri: ${throws.join(' - ')}`;
+    }
+
+    function generateDartButtons() {
+      const values = [...Array(20).keys()].map(x => x + 1).concat([25, 50]);
+      const container = document.getElementById('dartButtons');
+      container.innerHTML = '';
+      values.forEach(val => {
+        const btn = document.createElement('button');
+        btn.innerText = val;
+        btn.onclick = () => addThrow(val);
+        container.appendChild(btn);
+      });
+    }
+
+    function setMultiplier(mult) {
+      currentMultiplier = mult;
+      clearMultiplierSelection();
+      if (mult === 2) {
+        document.getElementById('btn-x2').classList.add('selected-multiplier');
+      } else if (mult === 3) {
+        document.getElementById('btn-x3').classList.add('selected-multiplier');
+      }
+    }
+
+    function clearMultiplierSelection() {
+      document.getElementById('btn-x2').classList.remove('selected-multiplier');
+      document.getElementById('btn-x3').classList.remove('selected-multiplier');
+    }
+
+    function addThrow(value) {
+      if (throws.length < 3) {
+        if ((value === 25 || value === 50) && currentMultiplier > 1) {
+          alert('Non puoi moltiplicare 25 o 50!');
+          return;
+        }
+        throws.push(value * currentMultiplier);
+        updateThrowsDisplay();
+        currentMultiplier = 1;
+        clearMultiplierSelection();
+        if (throws.length === 3) {
+          confirmThrows();
+        }
+      }
+    }
+
+    function confirmThrows() {
+      const total = throws.reduce((acc, val) => acc + val, 0);
+      players[currentPlayer].score -= total;
+      if (players[currentPlayer].score < 0) {
+        players[currentPlayer].score += total;
+        alert('Bust! Nessun cambiamento di punteggio.');
+      } else if (players[currentPlayer].score === 0) {
+        alert(`${players[currentPlayer].name} ha vinto! 🎯`);
+        location.reload();
+        return;
+      }
+      currentPlayer = (currentPlayer + 1) % players.length;
+      renderPlayers();
+      updateTurnInfo();
+    }
+
+    document.getElementById('numPlayers').addEventListener('input', function() {
+      const num = parseInt(this.value);
+      const container = document.getElementById('playerNames');
+      container.innerHTML = '';
+      for (let i = 0; i < num; i++) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'playerName' + i;
+        input.placeholder = `Nome Giocatore ${i+1}`;
+        container.appendChild(input);
+      }
+    });
+
+    document.getElementById('numPlayers').dispatchEvent(new Event('input'));
+  </script>
+
+</body>
+</html>
