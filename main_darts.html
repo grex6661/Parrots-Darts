@@ -3,50 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Segnapunti Freccette</title>
+  <title>Parrots Darts - Segnapunti</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Arial Black', Gadget, sans-serif;
       padding: 20px;
-      background: #f0f0f0;
+      margin: 0;
+      background: #e6f2e6;
+      color: #003300;
+    }
+    h2, h3 {
+      text-align: center;
+      color: #cc0000;
+    }
+    .logo {
+      display: block;
+      margin: 0 auto 10px;
+      max-width: 150px;
+      height: auto;
     }
     .hidden {
       display: none;
     }
     input, button, select {
-      margin: 5px 0;
-      padding: 10px;
-      font-size: 16px;
+      margin: 8px 0;
+      padding: 12px;
+      font-size: 18px;
       width: 100%;
+      border: 2px solid #006600;
+      border-radius: 8px;
+    }
+    button {
+      background-color: #009900;
+      color: white;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #007700;
     }
     .player {
       margin: 10px 0;
       padding: 10px;
       background: white;
+      border-left: 5px solid #009900;
       border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
     .turn {
-      background: #d1ffd1;
+      background: #ffffcc;
     }
-    .dart-buttons button, .multiplier-buttons button {
-      width: 60px;
+    .dart-buttons, .multiplier-buttons, .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .dart-buttons button, .multiplier-buttons button, .action-buttons button {
+      flex: 1 0 21%;
       margin: 5px;
+      padding: 15px;
+      font-size: 18px;
     }
     .selected-multiplier {
-      background-color: #4CAF50;
+      background-color: #ff6600 !important;
       color: white;
     }
     #throws {
       margin: 10px 0;
-      font-size: 18px;
+      font-size: 20px;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      input, button, select {
+        font-size: 16px;
+        padding: 10px;
+      }
+      .dart-buttons button, .multiplier-buttons button, .action-buttons button {
+        flex: 1 0 30%;
+      }
     }
   </style>
 </head>
 <body>
 
   <div id="setup">
-    <h2>Imposta la Partita</h2>
+    <img src="C:\Users\Gregis\Desktop\FRECCETTE\Logo.png" alt="Parrots Darts Logo" class="logo">
+    <h2>Parrots Darts</h2>
     <label>Numero di Giocatori:</label>
     <input type="number" id="numPlayers" min="2" max="10" value="2">
 
@@ -68,11 +110,18 @@
 
     <h3 id="turnInfo"></h3>
     <div id="throws">Tiri: </div>
+
     <div class="multiplier-buttons">
       <button id="btn-x2" onclick="setMultiplier(2)">x2</button>
       <button id="btn-x3" onclick="setMultiplier(3)">x3</button>
     </div>
+
     <div class="dart-buttons" id="dartButtons"></div>
+
+    <div class="action-buttons">
+      <button onclick="confirmThrowsManually()">Conferma Tiri</button>
+      <button onclick="cancelLastThrow()">Annulla Ultimo Tiro</button>
+    </div>
   </div>
 
   <script>
@@ -116,7 +165,7 @@
     }
 
     function updateThrowsDisplay() {
-      document.getElementById('throws').innerText = `Tiri: ${throws.join(' - ')}`;
+      document.getElementById('throws').innerText = `Tiri: ${throws.map(t => t).join(' - ')}`;
     }
 
     function generateDartButtons() {
@@ -156,13 +205,16 @@
         updateThrowsDisplay();
         currentMultiplier = 1;
         clearMultiplierSelection();
-        if (throws.length === 3) {
-          confirmThrows();
-        }
+      } else {
+        alert('Hai già lanciato 3 freccette!');
       }
     }
 
-    function confirmThrows() {
+    function confirmThrowsManually() {
+      if (throws.length === 0) {
+        alert('Nessun tiro registrato!');
+        return;
+      }
       const total = throws.reduce((acc, val) => acc + val, 0);
       players[currentPlayer].score -= total;
       if (players[currentPlayer].score < 0) {
@@ -176,6 +228,15 @@
       currentPlayer = (currentPlayer + 1) % players.length;
       renderPlayers();
       updateTurnInfo();
+    }
+
+    function cancelLastThrow() {
+      if (throws.length > 0) {
+        throws.pop();
+        updateThrowsDisplay();
+      } else {
+        alert('Nessun tiro da annullare.');
+      }
     }
 
     document.getElementById('numPlayers').addEventListener('input', function() {
